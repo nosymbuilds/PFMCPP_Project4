@@ -99,12 +99,7 @@ struct HeapA
     A* a = nullptr;
 };
 
-
-
 #include <iostream>
-struct FloatType;
-struct DoubleType;
-struct IntType;
 
 struct FloatType
 {
