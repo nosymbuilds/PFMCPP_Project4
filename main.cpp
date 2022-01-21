@@ -182,7 +182,6 @@ struct FloatType
     FloatType& pow( const IntType& it );
     FloatType& pow( const FloatType& ft );
     FloatType& pow( const DoubleType& dt );
-    FloatType& powInternal( float f_ );
 
     explicit FloatType( float i ) : value( new float{ i } ) { }
     ~FloatType() { delete value; value = nullptr; }
@@ -190,7 +189,7 @@ struct FloatType
 
 private:
     float* value = nullptr;
-
+    FloatType& powInternal( float f_ );
 };
 
 FloatType& FloatType::add( float rhs )
@@ -231,7 +230,6 @@ struct DoubleType
     DoubleType& pow( const IntType& it );
     DoubleType& pow( const FloatType& ft );
     DoubleType& pow( const DoubleType& dt );
-    DoubleType& powInternal( double d_ );
 
     explicit DoubleType( double i ) : value( new double{ i } ) { }
     ~DoubleType() { delete value; value = nullptr; }
@@ -239,6 +237,7 @@ struct DoubleType
 
 private:
     double* value = nullptr;
+    DoubleType& powInternal( double d_ );
 };
 
 DoubleType& DoubleType::add( double rhs )
@@ -279,7 +278,6 @@ struct IntType
     IntType& pow( const IntType& it );
     IntType& pow( const FloatType& ft );
     IntType& pow( const DoubleType& dt );
-    IntType& powInternal( int i_ );
 
     explicit IntType( int i ) : value( new int{ i } ) { }
     ~IntType() { delete value; value = nullptr; }
@@ -287,6 +285,7 @@ struct IntType
 
 private:
     int* value = nullptr;
+    IntType& powInternal( int i_ );
 };
 
 IntType& IntType::add( int rhs )
