@@ -272,7 +272,7 @@ struct DoubleType
     DoubleType& apply( std::function<DoubleType&(std::unique_ptr<double>&)> func );
     DoubleType& apply( void(*func)(std::unique_ptr<double>&) );
 
-    explicit DoubleType( double i ) : value( new double{ i } ) { }
+    explicit DoubleType( double d ) : value( std::make_unique<double>(d) ) { }
     ~DoubleType() { value = nullptr; }
     operator double() const { return *value; }
 
@@ -341,7 +341,8 @@ struct IntType
     IntType& apply( std::function<IntType&(std::unique_ptr<int>&)> func );
     IntType& apply( void(*func)(std::unique_ptr<int>&) );
 
-    explicit IntType( int i ) : value( new int{ i } ) { }
+
+    explicit IntType( int i ) : value( std::make_unique<int>(i) ) { }
     ~IntType() { value = nullptr; }
     operator int() const { return *value; }
 
