@@ -245,11 +245,30 @@ struct Numeric
         return *this;
     }
 
-    Numeric& operator/=( Type rhs )
+    template<typename T_>
+    Numeric& operator/=( const T_ rhs )
     {
-        if( rhs == 0.0f )
-            std::cout << "warning: floating point division by zero!" << std::endl;
-
+        if constexpr (std::is_same<Type, int>::value)
+        {
+            if constexpr (std::is_same<T_, int>::value)
+            {
+                if (rhs == 0)
+                {
+                    std::cout << "error: integer division by zero is an error and will crash the program!\n";
+                    return *this;
+                }
+            }
+            else if (std::abs(rhs) <= std::numeric_limits<T_>::epsilon())
+            {
+                std::cout << "can't divide integers by zero!\n";
+                return *this;
+            }
+        }
+        else if (std::abs(rhs) <= std::numeric_limits<T_>::epsilon())
+        {
+            std::cout << "warning: floating point division by zero!\n";
+        }
+    
         *value /= rhs;
         return *this;
     }
@@ -287,6 +306,66 @@ private:
 
     Numeric& powInternal( Type t_ ) 
     { 
+        *value = static_cast<Type>(std::pow( *value, t_ ));
+        return *this; 
+    }
+};
+
+template<>
+struct Numeric<double>
+{
+
+    using Type = double;
+
+    Numeric& operator+=( Type rhs )
+    {
+        *value += rhs;
+        return *this;
+    }
+
+    Numeric& operator-=( Type rhs )
+    {
+        *value -= rhs ;
+        return *this;
+    }
+
+    Numeric& operator*=( Type rhs )
+    {
+        *value *= rhs ;
+        return *this;
+    }
+
+    Numeric& operator/=( Type rhs )
+    {
+        if( rhs == 0.0 )
+            std::cout << "warning: floating point division by zero!" << std::endl;
+
+        *value /= rhs;
+        return *this;
+    }
+
+    template<typename Type>
+    Numeric& apply(Type func)
+    {                             
+        func(value);  
+        return *this;
+    }
+
+    Numeric& pow( Type t ) 
+    { 
+        return powInternal( t ); 
+    }
+
+    explicit Numeric( Type n ) : value( std::make_unique<Type>(n) ) {}
+    ~Numeric() { value = nullptr; }
+    operator Type() const { return *value; }
+
+private:
+
+    std::unique_ptr<Type> value = nullptr;
+
+    Numeric& powInternal( Type t_ ) 
+    { 
         *value = std::pow( *value, t_ );
         return *this; 
     }
@@ -295,14 +374,9 @@ private:
 struct Point
 {
     Point( float fx, float fy );
-    Point( IntType& it_x, IntType& it_y  );
-    Point( DoubleType& dt_x, DoubleType& dt_y );
-    Point( FloatType& ft_x, FloatType& ft_y );
 
     Point& multiply( float m );
-    Point& multiply( IntType& it );
-    Point& multiply( FloatType& ft );
-    Point& multiply( DoubleType& dt );
+
 
     void toString() 
     { 
@@ -314,9 +388,6 @@ private:
 };
 
 Point::Point( float fx, float fy ) : x(fx), y(fy) {}
-Point::Point( IntType& it_x, IntType& it_y  ) : Point( static_cast<float>(it_x), static_cast<float>(it_y) ) {}
-Point::Point( DoubleType& dt_x, DoubleType& dt_y ) : Point( static_cast<float>(dt_x), static_cast<float>(dt_y) ) {}
-Point::Point( FloatType& ft_x, FloatType& ft_y ) : Point( static_cast<float>(ft_x), static_cast<float>(ft_y) ) {}
 
 Point& Point::multiply( float m )
 {
@@ -325,35 +396,10 @@ Point& Point::multiply( float m )
     return *this;
 }
 
-Point& Point::multiply( IntType& it )
-{
-    return multiply( static_cast<float>(it) );
-}
-
-Point& Point::multiply( DoubleType& dt )
-{
-    return multiply( static_cast<float>(dt) );
-}
-
-Point& Point::multiply( FloatType& ft )
-{
-    return multiply( static_cast<float>(ft) );
-}
-
-void myFloatFreeFunct( std::unique_ptr<float>& f ) 
+template<typename Type>
+void myNumericFreeFunct( std::unique_ptr<Type>& val ) 
 { 
-    *f += 7.0f; 
-}
-
-void myDoubleFreeFunct( std::unique_ptr<double>& d ) 
-{ 
-    *d += 6.0; 
-
-}
-
-void myIntFreeFunct( std::unique_ptr<int>& i ) 
-{ 
-    *i += 5; 
+    *val += static_cast<Type>(7.0f);
 }
 
 void part3()
@@ -380,8 +426,8 @@ void part3()
     std::cout << "An operation followed by attempts to divide by 0, which are ignored and warns user: " << std::endl;
     it *= it;
     it /= 0;
-    it /= static_cast<int>(0.0f);
-    it /= static_cast<int>(0.0);
+    it /= 0.0f;
+    it /= 0.0;
     std::cout << it << std::endl;
     
     it *= static_cast<int>(ft);
@@ -413,14 +459,14 @@ void part4()
     std::cout << "pow(ft1, floatExp) = " << ft1 << "^" << floatExp << " = " << ft1.pow(floatExp)  << std::endl;
     std::cout << "pow(ft1, itExp) = " << ft1 << "^" << itExp << " = " << ft1.pow(itExp)  << std::endl;
     std::cout << "pow(ft1, ftExp) = " << ft1 << "^" << ftExp << " = " << ft1.pow(ftExp)  << std::endl;    
-    std::cout << "pow(ft1, dtExp) = " << ft1 << "^" << dtExp << " = " << ft1.pow(dtExp)  << std::endl;    
+    std::cout << "pow(ft1, dtExp) = " << ft1 << "^" << dtExp << " = " << ft1.pow(static_cast<float>(dtExp))  << std::endl;    
     std::cout << "---------------------\n" << std::endl;  
 
     // Power tests with DoubleType
     std::cout << "Power tests with DoubleType " << std::endl;
     std::cout << "pow(dt1, doubleExp) = " << dt1 << "^" << doubleExp << " = " << dt1.pow(intExp)  << std::endl;
     std::cout << "pow(dt1, itExp) = " << dt1 << "^" << itExp << " = " << dt1.pow(itExp)  << std::endl;
-    std::cout << "pow(dt1, ftExp) = " << dt1 << "^" << ftExp << " = " << dt1.pow(ftExp)  << std::endl;    
+    std::cout << "pow(dt1, ftExp) = " << dt1 << "^" << ftExp << " = " << dt1.pow(static_cast<double>(ftExp)) << std::endl;    
     std::cout << "pow(dt1, dtExp) = " << dt1 << "^" << dtExp << " = " << dt1.pow(dtExp)  << std::endl;    
     std::cout << "---------------------\n" << std::endl;    
 
@@ -428,8 +474,8 @@ void part4()
     std::cout << "Power tests with IntType " << std::endl;
     std::cout << "pow(it1, intExp) = " << it1 << "^" << intExp << " = " << it1.pow(intExp)  << std::endl;
     std::cout << "pow(it1, itExp) = " << it1 << "^" << itExp << " = " << it1.pow(itExp)  << std::endl;
-    std::cout << "pow(it1, ftExp) = " << it1 << "^" << ftExp << " = " << it1.pow(ftExp)  << std::endl;    
-    std::cout << "pow(it1, dtExp) = " << it1 << "^" << dtExp << " = " << it1.pow(dtExp)  << std::endl;    
+    std::cout << "pow(it1, ftExp) = " << it1 << "^" << ftExp << " = " << it1.pow(static_cast<int>(ftExp))  << std::endl;    
+    std::cout << "pow(it1, dtExp) = " << it1 << "^" << dtExp << " = " << it1.pow(static_cast<int>(dtExp))  << std::endl;    
     std::cout << "===============================\n" << std::endl; 
 
     // ------------------------------------------------------------
@@ -463,7 +509,7 @@ void part4()
     Point p2(ft2, static_cast<float>(dt2));
     p2.toString();   
     std::cout << "Multiplication factor: " << dt2 << std::endl;
-    p2.multiply(dt2); 
+    p2.multiply(static_cast<float>(dt2)); 
     p2.toString();   
     std::cout << "---------------------\n" << std::endl;
 
@@ -538,8 +584,13 @@ void part7()
     std::cout << "ft3 before: " << ft3 << std::endl;
 
     {
-        using Type = #4;
-        ft3.apply( [](std::unique...){} );
+        using Type = decltype( ft3 )::Type;
+        using ReturnType = decltype( ft3 );
+        ft3.apply([&ft3](std::unique_ptr<Type>& val ) -> ReturnType&
+        {
+            *val += 7.f; 
+            return ft3;
+        });
     }
 
     std::cout << "ft3 after: " << ft3 << std::endl;
@@ -553,10 +604,15 @@ void part7()
     std::cout << "dt3 before: " << dt3 << std::endl;
 
     {
-        using Type = #4;
-        dt3.apply( [](std::unique...){} ); // This calls the templated apply fcn
+        using Type = decltype( dt3 )::Type;
+        using ReturnType = decltype( dt3 );
+        dt3.apply( [&dt3](std::unique_ptr<Type>& val) -> ReturnType&
+        {
+            *val += 6.0; 
+            return dt3;
+        });
     }
-    
+
     std::cout << "dt3 after: " << dt3 << std::endl;
     std::cout << "Calling Numeric<double>::apply() twice using a free function (adds 7.0) and void as return type:" << std::endl;
     std::cout << "dt3 before: " << dt3 << std::endl;
@@ -568,8 +624,13 @@ void part7()
     std::cout << "it3 before: " << it3 << std::endl;
 
     {
-        using Type = #4;
-        it3.apply( [](std::unique...){} );
+        using Type = decltype( it3)::Type;
+        using ReturnType = decltype( it3 );
+        it3.apply( [&it3](std::unique_ptr<Type>& val) -> ReturnType&
+        {
+            *val += 5; 
+            return it3;
+        });
     }
     std::cout << "it3 after: " << it3 << std::endl;
     std::cout << "Calling Numeric<int>::apply() twice using a free function (adds 7) and void as return type:" << std::endl;
